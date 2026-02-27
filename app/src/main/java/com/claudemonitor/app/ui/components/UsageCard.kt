@@ -43,7 +43,7 @@ fun UsageCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -93,13 +93,12 @@ fun UsageCard(
 
                 // Linear progress bar
                 LinearProgressIndicator(
-                    progress = { animatedProgress },
+                    progress = animatedProgress,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp),
                     color = statusColor,
                     trackColor = statusColor.copy(alpha = 0.15f),
-                    strokeCap = StrokeCap.Round
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))

@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,9 +61,7 @@ fun DashboardScreen(
             )
         }
     ) { paddingValues ->
-        PullToRefreshBox(
-            isRefreshing = usageData.isLoading,
-            onRefresh = onRefresh,
+        Box(
             modifier = Modifier.padding(paddingValues)
         ) {
             LazyColumn(
@@ -149,7 +146,7 @@ fun DashboardScreen(
                         Card(
                             shape = MaterialTheme.shapes.large,
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                         ) {
                             Row(
@@ -199,7 +196,7 @@ private fun ServiceToggleCard(
             containerColor = if (isRunning)
                 MaterialTheme.colorScheme.primaryContainer
             else
-                MaterialTheme.colorScheme.surfaceContainerHigh
+                MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Row(
@@ -252,7 +249,7 @@ private fun EmptyStateCard(onNavigateToLogin: () -> Unit) {
     Card(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Column(
