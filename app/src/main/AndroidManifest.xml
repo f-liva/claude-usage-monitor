@@ -40,6 +40,14 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".service.RefreshActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ClaudeMonitor.Transparent"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity="" />
+
         <service
             android:name=".service.MonitorForegroundService"
             android:exported="false"

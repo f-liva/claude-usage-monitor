@@ -83,11 +83,19 @@ fun UsageCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                Text(
-                    text = "${modelLimit.used} / ${modelLimit.total} ${modelLimit.unit}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (modelLimit.unit == "%") {
+                    Text(
+                        text = "${modelLimit.used}% utilizzato",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        text = "${modelLimit.used} / ${modelLimit.total} ${modelLimit.unit}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -102,24 +110,13 @@ fun UsageCard(
                     strokeCap = StrokeCap.Round
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                if (modelLimit.resetPeriod.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "${modelLimit.remaining} remaining",
+                        text = "Si ripristina ${modelLimit.resetPeriod}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (modelLimit.resetPeriod.isNotEmpty()) {
-                        Text(
-                            text = modelLimit.resetPeriod,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
             }
         }

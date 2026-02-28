@@ -9,8 +9,8 @@ import com.claudemonitor.app.data.model.ModelLimit
 import com.claudemonitor.app.data.model.SessionState
 import com.claudemonitor.app.data.model.UsageData
 import com.claudemonitor.app.data.repository.PreferencesManager
-import com.claudemonitor.app.service.ClaudeApiClient
 import com.claudemonitor.app.service.MonitorForegroundService
+import com.claudemonitor.app.service.RefreshActivity
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -18,7 +18,6 @@ import org.json.JSONObject
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefsManager = PreferencesManager(application)
-    private val apiClient = ClaudeApiClient()
 
     private val _usageData = MutableStateFlow(UsageData())
     val usageData: StateFlow<UsageData> = _usageData.asStateFlow()
@@ -40,40 +39,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadSession()
-    }
-
-    private fun loadSession() {
+        // Observe DataStore for changes from RefreshActivity
         viewModelScope.launch {
-            val isLoggedIn = prefsManager.isLoggedIn.first()
-            if (isLoggedIn) {
-                _sessionState.value = SessionState(loginState = LoginState.LOGGED_IN)
-
-                // Load cached usage data first
-                val cachedJson = prefsManager.lastUsageJson.first()
-                if (cachedJson != null) {
-                    parseCachedUsage(cachedJson)
+            prefsManager.lastUsageJson.collect { json ->
+                if (json != null) {
+                    parseCachedUsage(json)
                 }
-
-                // Then fetch fresh data
-                refreshUsage()
-            } else {
-                _sessionState.value = SessionState(loginState = LoginState.NOT_LOGGED_IN)
             }
         }
     }
 
-    fun refreshUsage() {
+    private fun loadSession() {
         viewModelScope.launch {
-            _usageData.value = _usageData.value.copy(isLoading = true, error = null)
+            // Check both DataStore flag AND cookies
+            val isLoggedIn = prefsManager.isLoggedIn.first()
+            val hasCookies = try {
+                val cookies = CookieManager.getInstance().getCookie("https://claude.ai") ?: ""
+                cookies.contains("sessionKey")
+            } catch (_: Exception) { false }
 
-            val cookies = prefsManager.sessionCookies.first() ?: ""
-            val data = apiClient.fetchUsage(cookies)
+            if (isLoggedIn || hasCookies) {
+                // Ensure flag is set if we have cookies
+                if (!isLoggedIn && hasCookies) {
+                    prefsManager.saveLoggedIn(true)
+                }
+                _sessionState.value = SessionState(loginState = LoginState.LOGGED_IN)
 
-            _usageData.value = data
-
-            // Persist if we got useful data
-            if (data.modelLimits.isNotEmpty() || data.planName.isNotEmpty()) {
-                prefsManager.saveLastUsageJson(serializeUsageData(data))
+                val cachedJson = prefsManager.lastUsageJson.first()
+                if (cachedJson != null) {
+                    parseCachedUsage(cachedJson)
+                } else {
+                    // No cached data — trigger refresh
+                    _usageData.value = _usageData.value.copy(isLoading = true)
+                    RefreshActivity.launch(getApplication())
+                }
+            } else {
+                _sessionState.value = SessionState(loginState = LoginState.NOT_LOGGED_IN)
             }
         }
     }
@@ -83,8 +84,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             prefsManager.saveSessionCookies(cookies)
             prefsManager.saveLoggedIn(true)
             _sessionState.value = SessionState(loginState = LoginState.LOGGED_IN)
-            refreshUsage()
+            _usageData.value = _usageData.value.copy(isLoading = true)
+
+            // Launch invisible refresh to fetch usage data
+            RefreshActivity.launch(getApplication())
         }
+    }
+
+    fun refreshUsage() {
+        _usageData.value = _usageData.value.copy(isLoading = true)
+        RefreshActivity.launch(getApplication())
     }
 
     fun toggleService() {
@@ -125,7 +134,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (_: Exception) {}
 
             prefsManager.clearAll()
-
             _sessionState.value = SessionState(loginState = LoginState.NOT_LOGGED_IN)
             _usageData.value = UsageData()
         }
@@ -148,15 +156,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (modelsArray != null) {
                 for (i in 0 until modelsArray.length()) {
                     val m = modelsArray.getJSONObject(i)
-                    models.add(
-                        ModelLimit(
-                            modelName = m.optString("modelName", "Unknown"),
-                            used = m.optInt("used", 0),
-                            total = m.optInt("total", 0),
-                            unit = m.optString("unit", "messages"),
-                            resetPeriod = m.optString("resetPeriod", "")
-                        )
-                    )
+                    models.add(ModelLimit(
+                        modelName = m.optString("modelName", "Unknown"),
+                        used = m.optInt("used", 0),
+                        total = m.optInt("total", 0),
+                        unit = m.optString("unit", "%"),
+                        resetPeriod = m.optString("resetPeriod", "")
+                    ))
                 }
             }
             _usageData.value = UsageData(
@@ -166,12 +172,5 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 lastUpdated = obj.optLong("lastUpdated", System.currentTimeMillis())
             )
         } catch (_: Exception) { }
-    }
-
-    private fun serializeUsageData(data: UsageData): String {
-        val models = data.modelLimits.joinToString(",") { m ->
-            """{"modelName":"${m.modelName}","used":${m.used},"total":${m.total},"unit":"${m.unit}","resetPeriod":"${m.resetPeriod}"}"""
-        }
-        return """{"planName":"${data.planName}","resetTime":"${data.resetTime}","lastUpdated":${data.lastUpdated},"models":[$models]}"""
     }
 }

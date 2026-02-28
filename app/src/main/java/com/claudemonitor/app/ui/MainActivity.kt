@@ -107,7 +107,6 @@ fun AppNavigation(viewModel: MainViewModel) {
         }
 
         composable("login") {
-            // Show back button only when navigating from dashboard (backstack not empty)
             val canGoBack = navController.previousBackStackEntry != null
             LoginScreen(
                 onLoginSuccess = { cookies ->
