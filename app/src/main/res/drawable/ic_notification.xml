@@ -5,8 +5,27 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="#FFFFFF">
-    <!-- Simplified Claude-style icon: a sparkle/star shape -->
+    <!-- Bar chart -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M12,2L14.4,8.2L21,9.2L16.2,13.6L17.4,20.2L12,17L6.6,20.2L7.8,13.6L3,9.2L9.6,8.2Z" />
+        android:pathData="M3,20 L3,14 L6.5,14 L6.5,20 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M8.5,20 L8.5,9 L12,9 L12,20 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14,20 L14,4 L17.5,4 L17.5,20 Z" />
+    <!-- Clock outline (top-right) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M20.5,7 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" />
+    <!-- Clock hands -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:pathData="M20.5,5 L20.5,7 L22,7" />
 </vector>
