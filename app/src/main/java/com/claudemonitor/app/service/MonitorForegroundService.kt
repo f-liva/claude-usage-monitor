@@ -4,12 +4,9 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.claudemonitor.app.R
-import com.claudemonitor.app.data.model.ModelLimit
 import com.claudemonitor.app.data.model.UsageData
 import com.claudemonitor.app.data.repository.PreferencesManager
 import com.claudemonitor.app.ui.MainActivity
@@ -19,10 +16,10 @@ import kotlinx.coroutines.flow.first
 class MonitorForegroundService : Service() {
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var scraper: ClaudeWebScraper? = null
+    private val apiClient = ClaudeApiClient()
     private lateinit var prefsManager: PreferencesManager
-    private val handler = Handler(Looper.getMainLooper())
-    private var refreshRunnable: Runnable? = null
+    private var refreshJob: Job? = null
+    private var latestData: UsageData? = null
 
     companion object {
         const val CHANNEL_ID = "claude_monitor_channel"
@@ -33,7 +30,7 @@ class MonitorForegroundService : Service() {
         private var instance: MonitorForegroundService? = null
         val isRunning: Boolean get() = instance != null
 
-        fun getLatestUsageData(): UsageData? = instance?.scraper?.usageData?.value
+        fun getLatestUsageData(): UsageData? = instance?.latestData
 
         fun start(context: Context) {
             val intent = Intent(context, MonitorForegroundService::class.java)
@@ -54,7 +51,6 @@ class MonitorForegroundService : Service() {
         instance = this
         prefsManager = PreferencesManager(this)
         createNotificationChannel()
-        initScraper()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -80,49 +76,37 @@ class MonitorForegroundService : Service() {
 
     override fun onDestroy() {
         instance = null
-        refreshRunnable?.let { handler.removeCallbacks(it) }
-        scraper?.destroy()
+        refreshJob?.cancel()
         scope.cancel()
         super.onDestroy()
     }
 
-    private fun initScraper() {
-        scraper = ClaudeWebScraper(this).apply {
-            initialize()
-            scope.launch {
-                val cookies = prefsManager.sessionCookies.first()
-                if (cookies != null) {
-                    setCookies(cookies)
-                }
-            }
-        }
-    }
-
     private fun startPeriodicRefresh() {
-        scope.launch {
+        refreshJob?.cancel()
+        refreshJob = scope.launch {
             val intervalMinutes = prefsManager.refreshInterval.first()
             val intervalMs = intervalMinutes * 60 * 1000L
 
-            refreshRunnable?.let { handler.removeCallbacks(it) }
-            refreshRunnable = object : Runnable {
-                override fun run() {
-                    refreshUsage()
-                    handler.postDelayed(this, intervalMs)
-                }
+            while (isActive) {
+                delay(intervalMs)
+                refreshUsage()
             }
-            handler.postDelayed(refreshRunnable!!, intervalMs)
         }
     }
 
     private fun refreshUsage() {
-        scraper?.fetchUsage { usageData ->
-            updateNotification(usageData)
-            // Persist last usage data
-            scope.launch {
-                try {
+        scope.launch {
+            try {
+                val cookies = prefsManager.sessionCookies.first() ?: return@launch
+                val usageData = apiClient.fetchUsage(cookies)
+                latestData = usageData
+                updateNotification(usageData)
+
+                // Persist last usage data
+                if (usageData.modelLimits.isNotEmpty() || usageData.planName.isNotEmpty()) {
                     prefsManager.saveLastUsageJson(usageDataToJson(usageData))
-                } catch (_: Exception) { }
-            }
+                }
+            } catch (_: Exception) { }
         }
     }
 
@@ -192,21 +176,20 @@ class MonitorForegroundService : Service() {
 
     private fun buildNotificationText(usageData: UsageData?): String {
         if (usageData == null || usageData.modelLimits.isEmpty()) {
-            return if (usageData?.isLoading == true) {
-                "Loading usage data..."
-            } else if (usageData?.error != null) {
-                "Error: ${usageData.error}"
-            } else {
-                "Monitoring active — waiting for data"
+            return when {
+                usageData?.isLoading == true -> "Loading usage data..."
+                usageData?.error != null -> "Error: ${usageData.error}"
+                usageData?.planName?.isNotEmpty() == true -> "Plan: ${usageData.planName}"
+                else -> "Monitoring active — waiting for data"
             }
         }
 
         return usageData.modelLimits.joinToString(" | ") { limit ->
             val pct = (limit.percentage * 100).toInt()
             val icon = when {
-                limit.isAtLimit -> "\u26D4"     // no entry
-                limit.isNearLimit -> "\u26A0\uFE0F" // warning
-                else -> "\u2705"                 // check
+                limit.isAtLimit -> "\u26D4"
+                limit.isNearLimit -> "\u26A0\uFE0F"
+                else -> "\u2705"
             }
             "$icon ${limit.modelName}: ${limit.used}/${limit.total} ($pct%)"
         }

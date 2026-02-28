@@ -84,12 +84,51 @@ fun DashboardScreen(
                     )
                 }
 
+                // Loading indicator
+                if (usageData.isLoading) {
+                    item {
+                        Card(
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(20.dp)
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 3.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    "Fetching usage data...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Error message
                 if (usageData.error != null) {
                     item {
+                        val isSessionError = usageData.error!!.contains("session", ignoreCase = true) ||
+                                usageData.error!!.contains("expired", ignoreCase = true) ||
+                                usageData.error!!.contains("log in", ignoreCase = true)
+
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
+                                containerColor = if (isSessionError)
+                                    MaterialTheme.colorScheme.errorContainer
+                                else
+                                    MaterialTheme.colorScheme.surfaceContainerHigh
                             ),
                             shape = MaterialTheme.shapes.large
                         ) {
@@ -98,22 +137,36 @@ fun DashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    Icons.Rounded.ErrorOutline,
+                                    if (isSessionError) Icons.Rounded.ErrorOutline else Icons.Rounded.Info,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error
+                                    tint = if (isSessionError)
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        "Error",
+                                        if (isSessionError) "Session Error" else "Info",
                                         fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                        color = if (isSessionError)
+                                            MaterialTheme.colorScheme.onErrorContainer
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         usageData.error!!,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                        color = if (isSessionError)
+                                            MaterialTheme.colorScheme.onErrorContainer
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                }
+                                if (isSessionError) {
+                                    TextButton(onClick = onNavigateToLogin) {
+                                        Text("Log in")
+                                    }
                                 }
                             }
                         }
