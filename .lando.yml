@@ -1,0 +1,102 @@
+name: claude-usage-monitor
+recipe: custom
+
+services:
+  android:
+    type: compose
+    app_mount: delegated
+    services:
+      image: thyrlian/android-sdk:latest
+      command: tail -f /dev/null
+      working_dir: /app
+      environment:
+        ANDROID_HOME: /opt/android-sdk
+        GRADLE_USER_HOME: /app/.gradle-home
+        JAVA_OPTS: "-Xmx2048m"
+      volumes:
+        - .:/app
+        - gradle-cache:/app/.gradle-home
+
+  # Servizio opzionale: emulatore Android (richiede KVM)
+  # emulator:
+  #   type: compose
+  #   services:
+  #     image: thyrlian/android-sdk:latest
+  #     privileged: true
+  #     command: tail -f /dev/null
+  #     environment:
+  #       ANDROID_HOME: /opt/android-sdk
+
+tooling:
+  # Compila APK debug
+  build-debug:
+    service: android
+    cmd: ./gradlew assembleDebug --no-daemon
+    description: "Compila APK debug"
+
+  # Compila APK release
+  build-release:
+    service: android
+    cmd: ./gradlew assembleRelease --no-daemon
+    description: "Compila APK release"
+
+  # Pulisci la build
+  clean:
+    service: android
+    cmd: ./gradlew clean --no-daemon
+    description: "Pulisci la build"
+
+  # Esegui Gradle con argomenti custom
+  gradle:
+    service: android
+    cmd: ./gradlew --no-daemon
+    description: "Esegui un comando Gradle"
+
+  # Setup iniziale SDK (da eseguire una volta)
+  sdk-setup:
+    service: android
+    cmd: |
+      yes | sdkmanager --licenses 2>/dev/null || true
+      sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+    description: "Installa/aggiorna Android SDK components"
+    user: root
+
+  # Mostra versioni installate
+  sdk-info:
+    service: android
+    cmd: |
+      echo "=== Java ===" && java -version 2>&1
+      echo "=== Android SDK ===" && sdkmanager --list --include_obsolete 2>/dev/null | head -30
+      echo "=== Gradle ===" && ./gradlew --version --no-daemon 2>/dev/null | grep "Gradle "
+    description: "Mostra versioni SDK, Java e Gradle"
+
+volumes:
+  gradle-cache:
+
+# ============================================
+# QUICK START (Windows WSL)
+# ============================================
+#
+# 1. Installa Lando: https://docs.lando.dev/install/
+#    (su WSL: curl -fsSL https://get.lando.dev/setup-lando.sh | bash)
+#
+# 2. Avvia l'ambiente:
+#    lando start
+#
+# 3. Setup SDK (solo la prima volta):
+#    lando sdk-setup
+#
+# 4. Compila l'APK:
+#    lando build-debug
+#
+# 5. L'APK si trova in:
+#    app/build/outputs/apk/debug/app-debug.apk
+#
+# COMANDI DISPONIBILI:
+#   lando build-debug    → Compila APK debug
+#   lando build-release  → Compila APK release
+#   lando clean          → Pulisci build
+#   lando gradle <args>  → Comando Gradle custom
+#   lando sdk-setup      → Installa SDK components
+#   lando sdk-info       → Mostra versioni installate
+# ============================================
