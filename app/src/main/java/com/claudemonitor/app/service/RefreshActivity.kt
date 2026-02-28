@@ -185,6 +185,7 @@ class RefreshActivity : ComponentActivity() {
             var sectionName = ""
             var resetTime = ""
 
+            // Look backwards for section name and reset time
             for (j in (i - 1).coerceAtLeast(0) downTo (i - 5).coerceAtLeast(0)) {
                 val prev = lines[j]
                 val lowerPrev = prev.lowercase()
@@ -202,6 +203,15 @@ class RefreshActivity : ComponentActivity() {
                     prev.length in 3..60
                 ) {
                     sectionName = prev
+                }
+            }
+
+            // Look forwards for reset time (it usually appears after the percentage)
+            if (resetTime.isEmpty()) {
+                for (j in (i + 1).coerceAtMost(lines.lastIndex)..
+                         (i + 3).coerceAtMost(lines.lastIndex)) {
+                    resetRegex.find(lines[j])?.let { resetTime = it.groupValues[1].trim() }
+                    if (resetTime.isNotEmpty()) break
                 }
             }
 
