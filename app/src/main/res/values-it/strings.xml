@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Claude Monitor</string>
+
+    <!-- Login -->
+    <string name="login_title">Accedi a Claude</string>
+    <string name="login_banner">Dopo l\'accesso, tocca Continua</string>
+    <string name="login_continue">Continua</string>
+    <string name="back">Indietro</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">Claude Monitor</string>
+    <string name="refresh">Aggiorna</string>
+    <string name="settings">Impostazioni</string>
+    <string name="fetching_usage">Caricamento dati…</string>
+    <string name="session_error">Sessione scaduta</string>
+    <string name="info">Info</string>
+    <string name="log_in">Accedi</string>
+    <string name="usage_by_model">Utilizzo per modello</string>
+    <string name="limits_reset">Reset: %1$s</string>
+    <string name="last_updated">Aggiornato: %1$s</string>
+    <string name="background_monitoring">Monitoraggio in background</string>
+    <string name="monitoring_active">Attivo</string>
+    <string name="monitoring_disabled">Disattivato</string>
+    <string name="no_usage_data">Nessun dato disponibile</string>
+    <string name="no_usage_description">Accedi al tuo account Claude per monitorare i limiti di utilizzo.</string>
+    <string name="log_in_to_claude">Accedi a Claude</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Impostazioni</string>
+    <string name="account">Account</string>
+    <string name="default_account_name">Account Claude</string>
+    <string name="connected">Connesso</string>
+    <string name="monitoring">Monitoraggio</string>
+    <string name="persistent_notification">Notifica</string>
+    <string name="persistent_notification_desc">Mostra l\'utilizzo nella barra notifiche</string>
+    <string name="refresh_interval">Intervallo di aggiornamento</string>
+    <string name="every_n_minutes">Ogni %1$d minuti</string>
+    <string name="language">Lingua</string>
+    <string name="language_system">Predefinita</string>
+    <string name="language_en">English</string>
+    <string name="language_it">Italiano</string>
+    <string name="logout_button">Disconnetti</string>
+    <string name="app_version">Claude Monitor v1.1</string>
+    <string name="app_description">Monitora i limiti di utilizzo di Claude.</string>
+    <string name="logout_dialog_title">Disconnettersi?</string>
+    <string name="logout_dialog_message">La sessione verrà cancellata e il monitoraggio in background si fermerà. Dovrai accedere di nuovo.</string>
+    <string name="logout_confirm">Disconnetti</string>
+    <string name="cancel">Annulla</string>
+
+    <!-- Status Banner -->
+    <string name="status_ok">Tutto OK</string>
+    <string name="status_ok_desc">Utilizzo nei limiti</string>
+    <string name="status_near_limit">Vicino al limite</string>
+    <string name="status_near_limit_desc">Alcuni modelli sono vicini al limite</string>
+    <string name="status_at_limit">Limite raggiunto</string>
+    <string name="status_at_limit_desc">Uno o più modelli hanno raggiunto il limite</string>
+    <string name="status_no_data">Nessun dato</string>
+    <string name="status_no_data_desc">In attesa dei dati…</string>
+
+    <!-- Usage Card -->
+    <string name="percent_used">%1$d%% utilizzato</string>
+    <string name="usage_fraction">%1$d / %2$d %3$s</string>
+    <string name="resets_at">Si ripristina %1$s</string>
+
+    <!-- Notification -->
+    <string name="notif_channel_name">Claude Monitor</string>
+    <string name="notif_channel_desc">Mostra i limiti di utilizzo attuali</string>
+    <string name="notif_refreshing">Aggiornamento…</string>
+    <string name="notif_plan_open_app">%1$s — apri l\'app per i dettagli</string>
+    <string name="notif_open_app">Apri l\'app per vedere l\'utilizzo</string>
+    <string name="notif_no_data">Nessun dato disponibile</string>
+</resources>

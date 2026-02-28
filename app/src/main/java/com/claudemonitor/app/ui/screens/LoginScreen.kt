@@ -15,9 +15,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.claudemonitor.app.R
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,14 +47,12 @@ fun LoginScreen(
         }
     }
 
-    // Check immediately if already logged in (before WebView even loads)
     LaunchedEffect(Unit) {
         if (checkLoginCookies()) {
             completeLogin()
         }
     }
 
-    // Periodic check — catches redirects that onPageFinished might miss
     LaunchedEffect(Unit) {
         while (!loginDetected) {
             delay(2000)
@@ -75,7 +75,7 @@ fun LoginScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Log in to Claude", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.login_title), fontWeight = FontWeight.Bold)
                         if (currentUrl.isNotEmpty()) {
                             Text(
                                 currentUrl.take(50) + if (currentUrl.length > 50) "..." else "",
@@ -88,7 +88,7 @@ fun LoginScreen(
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back))
                         }
                     }
                 },
@@ -99,7 +99,6 @@ fun LoginScreen(
         }
     ) { paddingValues ->
         Column(modifier = Modifier.padding(paddingValues)) {
-            // Loading progress
             if (isLoading) {
                 LinearProgressIndicator(
                     progress = { progress / 100f },
@@ -108,7 +107,6 @@ fun LoginScreen(
                 )
             }
 
-            // Banner: tap Continue after login
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -126,7 +124,7 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Dopo il login, tocca Continua",
+                        text = stringResource(R.string.login_banner),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -143,12 +141,11 @@ fun LoginScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Continua", style = MaterialTheme.typography.labelMedium)
+                        Text(stringResource(R.string.login_continue), style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
 
-            // WebView
             AndroidView(
                 modifier = Modifier
                     .fillMaxSize()
@@ -180,7 +177,6 @@ fun LoginScreen(
                                 currentUrl = url ?: ""
                                 isLoading = false
 
-                                // Auto-detect login on any claude.ai page
                                 if (url != null && url.startsWith("https://claude.ai")) {
                                     val path = url.removePrefix("https://claude.ai")
                                         .split("?").first().split("#").first()
@@ -200,7 +196,6 @@ fun LoginScreen(
                             ): Boolean {
                                 val url = request?.url?.toString() ?: return false
 
-                                // Detect login during redirect (before onPageFinished)
                                 if (url.startsWith("https://claude.ai")) {
                                     val path = url.removePrefix("https://claude.ai")
                                         .split("?").first().split("#").first()
@@ -210,7 +205,7 @@ fun LoginScreen(
                                             path.startsWith("/sso")
                                     if (!isAuthPage && checkLoginCookies()) {
                                         completeLogin()
-                                        return true // Don't load the page, we're done
+                                        return true
                                     }
                                 }
 

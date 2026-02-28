@@ -3,16 +3,14 @@ package com.claudemonitor.app.service
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
+import android.graphics.PixelFormat
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.*
-import android.widget.FrameLayout
-import androidx.activity.ComponentActivity
-import com.claudemonitor.app.R
 import com.claudemonitor.app.data.model.ModelLimit
 import com.claudemonitor.app.data.model.UsageData
 import com.claudemonitor.app.data.repository.PreferencesManager
@@ -20,52 +18,59 @@ import kotlinx.coroutines.*
 import org.json.JSONArray
 
 /**
- * Completely invisible Activity that loads claude.ai/settings/usage in a
- * hidden WebView, scrapes DOM content, saves to DataStore, and finishes.
- * The user sees nothing.
+ * Performs WebView scraping using a SYSTEM_ALERT_WINDOW overlay.
+ * This allows the WebView to have a Window context without needing an Activity,
+ * bypassing Android 14+ background activity launch restrictions.
  */
-class RefreshActivity : ComponentActivity() {
+class OverlayWebViewScraper(private val context: Context) {
 
-    private var webView: WebView? = null
     private val handler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private lateinit var prefsManager: PreferencesManager
+    private val prefsManager = PreferencesManager(context)
+    private var webView: WebView? = null
     private var orgName = ""
     private var done = false
 
     companion object {
-        private const val TAG = "RefreshActivity"
+        private const val TAG = "OverlayScraper"
+        private const val TIMEOUT_MS = 20_000L
 
-        fun launch(context: Context) {
-            val intent = Intent(context, RefreshActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_NO_ANIMATION or
-                        Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
-                        Intent.FLAG_ACTIVITY_NO_HISTORY
+        fun canUseOverlay(context: Context): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Settings.canDrawOverlays(context)
+            } else {
+                true
             }
-            context.startActivity(intent)
         }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        overridePendingTransition(0, 0)
-        prefsManager = PreferencesManager(this)
-        Log.d(TAG, "Starting background refresh")
-
-        // Container that is completely invisible
-        val container = FrameLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            visibility = View.INVISIBLE
+    fun scrape() {
+        if (!canUseOverlay(context)) {
+            Log.w(TAG, "No overlay permission, skipping")
+            return
         }
 
-        webView = WebView(this).apply {
-            layoutParams = ViewGroup.LayoutParams(1, 1)
-            visibility = View.INVISIBLE
+        done = false
+        orgName = ""
+        val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+        val params = WindowManager.LayoutParams(
+            1, 1,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        )
+        params.x = 0
+        params.y = 0
+
+        webView = WebView(context).apply {
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
@@ -84,7 +89,7 @@ class RefreshActivity : ComponentActivity() {
                              text.contains("used", ignoreCase = true))
                     Log.d(TAG, "onDomContent: ${text.length} chars, hasData=$hasData")
                     if (hasData) {
-                        handler.post { onDataExtracted(text) }
+                        handler.post { onDataExtracted(text, windowManager) }
                     }
                 }
 
@@ -121,19 +126,26 @@ class RefreshActivity : ComponentActivity() {
             loadUrl("https://claude.ai/settings/usage")
         }
 
-        container.addView(webView)
-        setContentView(container)
+        try {
+            windowManager.addView(webView, params)
+            Log.d(TAG, "Overlay WebView added")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to add overlay", e)
+            cleanup(windowManager)
+            return
+        }
 
-        // Timeout: finish after 15s regardless
+        // Timeout
         handler.postDelayed({
             if (!done) {
-                Log.d(TAG, "Refresh timed out")
-                finishQuietly()
+                Log.d(TAG, "Scrape timed out")
+                cleanup(windowManager)
+                notifyService()
             }
-        }, 15000)
+        }, TIMEOUT_MS)
     }
 
-    private fun onDataExtracted(text: String) {
+    private fun onDataExtracted(text: String, windowManager: WindowManager) {
         if (done) return
         done = true
 
@@ -142,23 +154,28 @@ class RefreshActivity : ComponentActivity() {
 
         scope.launch {
             prefsManager.saveLastUsageJson(serializeUsageData(data))
-
-            // Tell the foreground service to reload cached data
-            if (MonitorForegroundService.isRunning) {
-                val refreshIntent = Intent(
-                    this@RefreshActivity,
-                    MonitorForegroundService::class.java
-                ).apply { action = MonitorForegroundService.ACTION_DATA_UPDATED }
-                startService(refreshIntent)
-            }
-
-            finishQuietly()
+            cleanup(windowManager)
+            notifyService()
         }
     }
 
-    private fun finishQuietly() {
-        finish()
-        overridePendingTransition(0, 0)
+    private fun cleanup(windowManager: WindowManager) {
+        try {
+            webView?.stopLoading()
+            webView?.destroy()
+            windowManager.removeView(webView)
+        } catch (_: Exception) {}
+        webView = null
+        handler.removeCallbacksAndMessages(null)
+    }
+
+    private fun notifyService() {
+        if (MonitorForegroundService.isRunning) {
+            val intent = Intent(context, MonitorForegroundService::class.java).apply {
+                action = MonitorForegroundService.ACTION_DATA_UPDATED
+            }
+            context.startService(intent)
+        }
     }
 
     private fun parseDomContent(text: String): UsageData {
@@ -221,7 +238,7 @@ class RefreshActivity : ComponentActivity() {
             modelLimits = limits,
             lastUpdated = System.currentTimeMillis(),
             isLoading = false,
-            error = if (limits.isEmpty()) getString(R.string.notif_no_data) else null
+            error = if (limits.isEmpty()) "No usage data found" else null
         )
     }
 
@@ -231,7 +248,6 @@ class RefreshActivity : ComponentActivity() {
             if (orgs.length() > 0) {
                 val org = orgs.getJSONObject(0)
 
-                // Save org display name (e.g. "Esperoweb") for Settings screen
                 val displayName = org.optString("name", "")
                 if (displayName.isNotEmpty()) {
                     scope.launch { prefsManager.saveAccountEmail(displayName) }
@@ -261,14 +277,5 @@ class RefreshActivity : ComponentActivity() {
             """{"modelName":"${m.modelName}","used":${m.used},"total":${m.total},"unit":"${m.unit}","resetPeriod":"${m.resetPeriod}"}"""
         }
         return """{"planName":"${data.planName}","resetTime":"${data.resetTime}","lastUpdated":${data.lastUpdated},"models":[$models]}"""
-    }
-
-    override fun onDestroy() {
-        handler.removeCallbacksAndMessages(null)
-        scope.cancel()
-        webView?.stopLoading()
-        webView?.destroy()
-        webView = null
-        super.onDestroy()
     }
 }

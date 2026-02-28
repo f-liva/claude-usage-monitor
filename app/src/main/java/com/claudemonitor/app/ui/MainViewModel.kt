@@ -91,7 +91,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun refreshUsage() {
+    private var lastRefreshTime = 0L
+    private val refreshCooldownMs = 30_000L // 30 seconds minimum between refreshes
+
+    fun refreshUsage(force: Boolean = false) {
+        if (_sessionState.value.loginState != LoginState.LOGGED_IN) return
+        val now = System.currentTimeMillis()
+        if (!force && now - lastRefreshTime < refreshCooldownMs) return
+        lastRefreshTime = now
         _usageData.value = _usageData.value.copy(isLoading = true)
         RefreshActivity.launch(getApplication())
     }

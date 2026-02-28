@@ -4,11 +4,11 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -27,7 +28,7 @@ import com.claudemonitor.app.ui.screens.LoginScreen
 import com.claudemonitor.app.ui.screens.SettingsScreen
 import com.claudemonitor.app.ui.theme.ClaudeMonitorTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.checkServiceStatus()
+        viewModel.refreshUsage()
     }
 
     private fun requestNotificationPermission() {
@@ -89,6 +91,12 @@ fun AppNavigation(viewModel: MainViewModel) {
     val notificationEnabled by viewModel.notificationEnabled.collectAsState()
     val accountEmail by viewModel.accountEmail.collectAsState()
 
+    // Get current app locale for Settings display
+    val currentLocale = remember {
+        val appLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        if (appLocales.isEmpty) "system" else appLocales.get(0)?.language ?: "system"
+    }
+
     val startDestination = if (sessionState.loginState == LoginState.LOGGED_IN) "dashboard" else "login"
 
     NavHost(
@@ -99,7 +107,7 @@ fun AppNavigation(viewModel: MainViewModel) {
             DashboardScreen(
                 usageData = usageData,
                 isServiceRunning = isServiceRunning,
-                onRefresh = { viewModel.refreshUsage() },
+                onRefresh = { viewModel.refreshUsage(force = true) },
                 onToggleService = { viewModel.toggleService() },
                 onNavigateToLogin = { navController.navigate("login") },
                 onNavigateToSettings = { navController.navigate("settings") }
@@ -124,6 +132,15 @@ fun AppNavigation(viewModel: MainViewModel) {
                 refreshIntervalMinutes = refreshInterval,
                 notificationEnabled = notificationEnabled,
                 accountEmail = accountEmail,
+                currentLanguage = currentLocale,
+                onLanguageChange = { langCode ->
+                    val locales = if (langCode == "system") {
+                        LocaleListCompat.getEmptyLocaleList()
+                    } else {
+                        LocaleListCompat.forLanguageTags(langCode)
+                    }
+                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(locales)
+                },
                 onRefreshIntervalChange = { viewModel.updateRefreshInterval(it) },
                 onNotificationToggle = { viewModel.updateNotificationEnabled(it) },
                 onLogout = {

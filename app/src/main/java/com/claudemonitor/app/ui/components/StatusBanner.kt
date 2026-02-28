@@ -13,8 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.claudemonitor.app.R
 import com.claudemonitor.app.data.model.UsageData
 import com.claudemonitor.app.ui.theme.*
 
@@ -33,26 +35,26 @@ fun StatusBanner(
     val (icon, title, subtitle, gradientColors) = when (overallStatus) {
         BannerStatus.OK -> BannerInfo(
             Icons.Rounded.CheckCircle,
-            "All Good",
-            "Usage within normal limits",
+            stringResource(R.string.status_ok),
+            stringResource(R.string.status_ok_desc),
             listOf(Success.copy(alpha = 0.8f), Success.copy(alpha = 0.6f))
         )
         BannerStatus.NEAR_LIMIT -> BannerInfo(
             Icons.Rounded.Warning,
-            "Approaching Limit",
-            "Some models are near their usage cap",
+            stringResource(R.string.status_near_limit),
+            stringResource(R.string.status_near_limit_desc),
             listOf(Warning.copy(alpha = 0.8f), Warning.copy(alpha = 0.6f))
         )
         BannerStatus.AT_LIMIT -> BannerInfo(
             Icons.Rounded.Error,
-            "Limit Reached",
-            "One or more models have hit their limit",
+            stringResource(R.string.status_at_limit),
+            stringResource(R.string.status_at_limit_desc),
             listOf(Danger.copy(alpha = 0.8f), Danger.copy(alpha = 0.6f))
         )
         BannerStatus.NO_DATA -> BannerInfo(
             Icons.Rounded.CloudOff,
-            "No Data",
-            "Waiting for usage data...",
+            stringResource(R.string.status_no_data),
+            stringResource(R.string.status_no_data_desc),
             listOf(
                 MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                 MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)

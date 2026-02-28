@@ -11,8 +11,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.claudemonitor.app.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -20,6 +22,8 @@ fun SettingsScreen(
     refreshIntervalMinutes: Int,
     notificationEnabled: Boolean,
     accountEmail: String?,
+    currentLanguage: String,
+    onLanguageChange: (String) -> Unit,
     onRefreshIntervalChange: (Int) -> Unit,
     onNotificationToggle: (Boolean) -> Unit,
     onLogout: () -> Unit,
@@ -31,11 +35,11 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Settings", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -53,7 +57,7 @@ fun SettingsScreen(
         ) {
             // Account section
             Text(
-                "Account",
+                stringResource(R.string.account),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold
@@ -80,14 +84,14 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            accountEmail ?: "Not logged in",
+                            accountEmail ?: stringResource(R.string.default_account_name),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            if (accountEmail != null) "Connected" else "Tap logout to reconnect",
+                            stringResource(R.string.connected),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -97,7 +101,7 @@ fun SettingsScreen(
 
             // Monitoring section
             Text(
-                "Monitoring",
+                stringResource(R.string.monitoring),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold
@@ -112,8 +116,8 @@ fun SettingsScreen(
                 Column(modifier = Modifier.padding(4.dp)) {
                     // Notification toggle
                     ListItem(
-                        headlineContent = { Text("Persistent Notification") },
-                        supportingContent = { Text("Show usage limits in the notification bar") },
+                        headlineContent = { Text(stringResource(R.string.persistent_notification)) },
+                        supportingContent = { Text(stringResource(R.string.persistent_notification_desc)) },
                         leadingContent = {
                             Icon(Icons.Rounded.Notifications, contentDescription = null)
                         },
@@ -129,8 +133,8 @@ fun SettingsScreen(
 
                     // Refresh interval
                     ListItem(
-                        headlineContent = { Text("Refresh Interval") },
-                        supportingContent = { Text("Every $refreshIntervalMinutes minutes") },
+                        headlineContent = { Text(stringResource(R.string.refresh_interval)) },
+                        supportingContent = { Text(stringResource(R.string.every_n_minutes, refreshIntervalMinutes)) },
                         leadingContent = {
                             Icon(Icons.Rounded.Timer, contentDescription = null)
                         }
@@ -144,6 +148,54 @@ fun SettingsScreen(
                         steps = 10,
                         modifier = Modifier.padding(horizontal = 20.dp)
                     )
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                    // Language
+                    val languageLabel = when (currentLanguage) {
+                        "en" -> stringResource(R.string.language_en)
+                        "it" -> stringResource(R.string.language_it)
+                        else -> stringResource(R.string.language_system)
+                    }
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.language)) },
+                        supportingContent = { Text(languageLabel) },
+                        leadingContent = {
+                            Icon(Icons.Rounded.Language, contentDescription = null)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ListItemDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                    )
+
+                    // Language options
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 12.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        LanguageChip(
+                            label = stringResource(R.string.language_system),
+                            selected = currentLanguage == "system",
+                            onClick = { onLanguageChange("system") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        LanguageChip(
+                            label = stringResource(R.string.language_en),
+                            selected = currentLanguage == "en",
+                            onClick = { onLanguageChange("en") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        LanguageChip(
+                            label = stringResource(R.string.language_it),
+                            selected = currentLanguage == "it",
+                            onClick = { onLanguageChange("it") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
@@ -151,7 +203,7 @@ fun SettingsScreen(
 
             // Danger zone
             Text(
-                "Account",
+                stringResource(R.string.account),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.SemiBold
@@ -167,19 +219,19 @@ fun SettingsScreen(
             ) {
                 Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Log out and clear session")
+                Text(stringResource(R.string.logout_button))
             }
 
             // App info
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                "Claude Usage Monitor v1.0",
+                stringResource(R.string.app_version),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
             Text(
-                "Uses a headless WebView to monitor your Claude account usage.",
+                stringResource(R.string.app_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -191,8 +243,8 @@ fun SettingsScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Log out?") },
-            text = { Text("This will clear your session and stop background monitoring. You'll need to log in again.") },
+            title = { Text(stringResource(R.string.logout_dialog_title)) },
+            text = { Text(stringResource(R.string.logout_dialog_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -203,14 +255,42 @@ fun SettingsScreen(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Log out")
+                    Text(stringResource(R.string.logout_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun LanguageChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (selected) {
+        FilledTonalButton(
+            onClick = onClick,
+            modifier = modifier,
+            shape = MaterialTheme.shapes.medium,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Text(label, style = MaterialTheme.typography.labelMedium)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = modifier,
+            shape = MaterialTheme.shapes.medium,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Text(label, style = MaterialTheme.typography.labelMedium)
+        }
     }
 }

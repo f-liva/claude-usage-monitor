@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -17,6 +18,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.claudemonitor.app.R
 import com.claudemonitor.app.data.model.ModelLimit
 import com.claudemonitor.app.ui.theme.Danger
 import com.claudemonitor.app.ui.theme.Success
@@ -85,13 +87,13 @@ fun UsageCard(
 
                 if (modelLimit.unit == "%") {
                     Text(
-                        text = "${modelLimit.used}% utilizzato",
+                        text = stringResource(R.string.percent_used, modelLimit.used),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     Text(
-                        text = "${modelLimit.used} / ${modelLimit.total} ${modelLimit.unit}",
+                        text = stringResource(R.string.usage_fraction, modelLimit.used, modelLimit.total, modelLimit.unit),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -113,7 +115,7 @@ fun UsageCard(
                 if (modelLimit.resetPeriod.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Si ripristina ${modelLimit.resetPeriod}",
+                        text = stringResource(R.string.resets_at, modelLimit.resetPeriod),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

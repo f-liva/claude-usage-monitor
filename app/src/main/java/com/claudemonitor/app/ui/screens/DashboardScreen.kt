@@ -10,8 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.claudemonitor.app.R
 import com.claudemonitor.app.data.model.UsageData
 import com.claudemonitor.app.ui.components.StatusBanner
 import com.claudemonitor.app.ui.components.UsageCard
@@ -34,7 +36,7 @@ fun DashboardScreen(
                 title = {
                     Column {
                         Text(
-                            "Claude Monitor",
+                            stringResource(R.string.dashboard_title),
                             fontWeight = FontWeight.Bold
                         )
                         if (usageData.planName.isNotEmpty()) {
@@ -48,10 +50,10 @@ fun DashboardScreen(
                 },
                 actions = {
                     IconButton(onClick = onRefresh) {
-                        Icon(Icons.Rounded.Refresh, "Refresh")
+                        Icon(Icons.Rounded.Refresh, stringResource(R.string.refresh))
                     }
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Rounded.Settings, "Settings")
+                        Icon(Icons.Rounded.Settings, stringResource(R.string.settings))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -107,7 +109,7 @@ fun DashboardScreen(
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text(
-                                    "Fetching usage data...",
+                                    stringResource(R.string.fetching_usage),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -147,7 +149,7 @@ fun DashboardScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        if (isSessionError) "Session Error" else "Info",
+                                        if (isSessionError) stringResource(R.string.session_error) else stringResource(R.string.info),
                                         fontWeight = FontWeight.SemiBold,
                                         color = if (isSessionError)
                                             MaterialTheme.colorScheme.onErrorContainer
@@ -165,7 +167,7 @@ fun DashboardScreen(
                                 }
                                 if (isSessionError) {
                                     TextButton(onClick = onNavigateToLogin) {
-                                        Text("Log in")
+                                        Text(stringResource(R.string.log_in))
                                     }
                                 }
                             }
@@ -177,7 +179,7 @@ fun DashboardScreen(
                 if (usageData.modelLimits.isNotEmpty()) {
                     item {
                         Text(
-                            "Usage by Model",
+                            stringResource(R.string.usage_by_model),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(top = 8.dp)
@@ -215,7 +217,7 @@ fun DashboardScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    "Limits reset: ${usageData.resetTime}",
+                                    stringResource(R.string.limits_reset, usageData.resetTime),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -227,7 +229,7 @@ fun DashboardScreen(
                 item {
                     val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
                     Text(
-                        text = "Last updated: ${dateFormat.format(Date(usageData.lastUpdated))}",
+                        text = stringResource(R.string.last_updated, dateFormat.format(Date(usageData.lastUpdated))),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 8.dp)
@@ -271,7 +273,7 @@ private fun ServiceToggleCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Background Monitoring",
+                        text = stringResource(R.string.background_monitoring),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color = if (isRunning)
@@ -280,7 +282,7 @@ private fun ServiceToggleCard(
                             MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = if (isRunning) "Active — persistent notification shown" else "Disabled",
+                        text = if (isRunning) stringResource(R.string.monitoring_active) else stringResource(R.string.monitoring_disabled),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isRunning)
                             MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
@@ -319,13 +321,13 @@ private fun EmptyStateCard(onNavigateToLogin: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                "No usage data yet",
+                stringResource(R.string.no_usage_data),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Log in to your Claude account to start monitoring your usage limits.",
+                stringResource(R.string.no_usage_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -336,7 +338,7 @@ private fun EmptyStateCard(onNavigateToLogin: () -> Unit) {
             ) {
                 Icon(Icons.Rounded.Login, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Log in to Claude")
+                Text(stringResource(R.string.log_in_to_claude))
             }
         }
     }
