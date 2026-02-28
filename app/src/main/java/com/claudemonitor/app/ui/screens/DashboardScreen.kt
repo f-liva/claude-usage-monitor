@@ -146,7 +146,7 @@ fun DashboardScreen(
                         Card(
                             shape = MaterialTheme.shapes.large,
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                             )
                         ) {
                             Row(
@@ -249,7 +249,7 @@ private fun EmptyStateCard(onNavigateToLogin: () -> Unit) {
     Card(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
     ) {
         Column(

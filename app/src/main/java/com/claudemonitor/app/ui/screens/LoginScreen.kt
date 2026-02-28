@@ -63,7 +63,7 @@ fun LoginScreen(
             // Loading progress
             if (isLoading) {
                 LinearProgressIndicator(
-                    progress = progress / 100f,
+                    progress = { progress / 100f },
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary
                 )

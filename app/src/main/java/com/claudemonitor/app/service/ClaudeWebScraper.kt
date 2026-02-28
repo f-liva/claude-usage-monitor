@@ -141,45 +141,52 @@ class ClaudeWebScraper(private val context: Context) {
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     fun initialize() {
         handler.post {
-            webView = WebView(context).apply {
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    userAgentString = USER_AGENT
-                    cacheMode = WebSettings.LOAD_DEFAULT
-                    databaseEnabled = true
-                    mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                    setSupportMultipleWindows(false)
-                    blockNetworkImage = true // Speed up by not loading images
-                }
-
-                addJavascriptInterface(JSInterface(), "ClaudeMonitor")
-
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        // Inject API interceptor on every page load
-                        view?.evaluateJavascript(INTERCEPT_API_JS, null)
-
-                        // After a delay, try to extract usage data from DOM
-                        handler.postDelayed({
-                            view?.evaluateJavascript(EXTRACT_USAGE_JS) { result ->
-                                parseScrapedData(result)
-                            }
-                        }, 3000)
+            try {
+                webView = WebView(context).apply {
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        userAgentString = USER_AGENT
+                        cacheMode = WebSettings.LOAD_DEFAULT
+                        databaseEnabled = true
+                        mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                        setSupportMultipleWindows(false)
+                        blockNetworkImage = true // Speed up by not loading images
                     }
 
-                    override fun shouldOverrideUrlLoading(
-                        view: WebView?,
-                        request: WebResourceRequest?
-                    ): Boolean {
-                        val url = request?.url?.toString() ?: return false
-                        return !url.startsWith(CLAUDE_BASE_URL)
-                    }
-                }
+                    addJavascriptInterface(JSInterface(), "ClaudeMonitor")
 
-                // Keep WebView invisible - headless mode
-                visibility = android.view.View.GONE
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            super.onPageFinished(view, url)
+                            // Inject API interceptor on every page load
+                            view?.evaluateJavascript(INTERCEPT_API_JS, null)
+
+                            // After a delay, try to extract usage data from DOM
+                            handler.postDelayed({
+                                view?.evaluateJavascript(EXTRACT_USAGE_JS) { result ->
+                                    parseScrapedData(result)
+                                }
+                            }, 3000)
+                        }
+
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): Boolean {
+                            val url = request?.url?.toString() ?: return false
+                            return !url.startsWith(CLAUDE_BASE_URL)
+                        }
+                    }
+
+                    // Keep WebView invisible - headless mode
+                    visibility = android.view.View.GONE
+                }
+            } catch (e: Exception) {
+                _usageData.value = UsageData(
+                    error = "WebView not available: ${e.message}",
+                    isLoading = false
+                )
             }
         }
     }

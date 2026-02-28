@@ -62,7 +62,7 @@ fun SettingsScreen(
             Card(
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                 )
             ) {
                 Row(
@@ -106,7 +106,7 @@ fun SettingsScreen(
             Card(
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                 )
             ) {
                 Column(modifier = Modifier.padding(4.dp)) {
@@ -125,7 +125,7 @@ fun SettingsScreen(
                         }
                     )
 
-                    Divider(modifier = Modifier.padding(horizontal = 16.dp))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                     // Refresh interval
                     ListItem(
