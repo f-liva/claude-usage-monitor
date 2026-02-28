@@ -22,7 +22,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 @Composable
 fun LoginScreen(
     onLoginSuccess: (cookies: String) -> Unit,
-    onBack: () -> Unit
+    onBack: (() -> Unit)?
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var currentUrl by remember { mutableStateOf("") }
@@ -47,8 +47,10 @@ fun LoginScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -117,11 +119,18 @@ fun LoginScreen(
                                 currentUrl = url ?: ""
                                 isLoading = false
 
-                                // Check if user successfully logged in (redirected to chat)
-                                if (url != null && (url.contains("claude.ai/chat") || url.contains("claude.ai/new"))) {
-                                    val cookies = CookieManager.getInstance().getCookie("https://claude.ai") ?: ""
-                                    if (cookies.contains("sessionKey") || cookies.isNotEmpty()) {
-                                        onLoginSuccess(cookies)
+                                // Check if user successfully logged in
+                                // After login Claude redirects to the main app (/, /chat, /new, /chats, /recents, etc.)
+                                if (url != null && url.startsWith("https://claude.ai")) {
+                                    val path = url.removePrefix("https://claude.ai")
+                                    val isLoginPage = path.startsWith("/login") ||
+                                            path.startsWith("/oauth") ||
+                                            path.startsWith("/signup")
+                                    if (!isLoginPage) {
+                                        val cookies = CookieManager.getInstance().getCookie("https://claude.ai") ?: ""
+                                        if (cookies.isNotEmpty()) {
+                                            onLoginSuccess(cookies)
+                                        }
                                     }
                                 }
                             }
@@ -142,8 +151,6 @@ fun LoginScreen(
                             }
                         }
 
-                        // Clear cookies first for a fresh login
-                        CookieManager.getInstance().removeAllCookies(null)
                         loadUrl("https://claude.ai/login")
                     }
                     webView

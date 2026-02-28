@@ -30,6 +30,7 @@ data class ModelLimit(
 }
 
 enum class LoginState {
+    LOADING,
     NOT_LOGGED_IN,
     LOGGING_IN,
     LOGGED_IN,

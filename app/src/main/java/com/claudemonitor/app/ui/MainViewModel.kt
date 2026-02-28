@@ -23,7 +23,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _usageData = MutableStateFlow(UsageData())
     val usageData: StateFlow<UsageData> = _usageData.asStateFlow()
 
-    private val _sessionState = MutableStateFlow(SessionState())
+    private val _sessionState = MutableStateFlow(SessionState(loginState = LoginState.LOADING))
     val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
 
     private val _isServiceRunning = MutableStateFlow(MonitorForegroundService.isRunning)
@@ -59,6 +59,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (cachedJson != null) {
                     parseCachedUsage(cachedJson)
                 }
+            } else {
+                _sessionState.value = SessionState(loginState = LoginState.NOT_LOGGED_IN)
             }
         }
     }

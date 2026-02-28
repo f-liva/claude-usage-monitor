@@ -9,10 +9,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
@@ -69,15 +72,23 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigation(viewModel: MainViewModel) {
-    val navController = rememberNavController()
     val sessionState by viewModel.sessionState.collectAsState()
+
+    // Show loading while checking saved session
+    if (sessionState.loginState == LoginState.LOADING) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+        return
+    }
+
+    val navController = rememberNavController()
     val usageData by viewModel.usageData.collectAsState()
     val isServiceRunning by viewModel.isServiceRunning.collectAsState()
     val refreshInterval by viewModel.refreshInterval.collectAsState()
     val notificationEnabled by viewModel.notificationEnabled.collectAsState()
     val accountEmail by viewModel.accountEmail.collectAsState()
 
-    // Decide start destination based on login state
     val startDestination = if (sessionState.loginState == LoginState.LOGGED_IN) "dashboard" else "login"
 
     NavHost(
@@ -96,14 +107,16 @@ fun AppNavigation(viewModel: MainViewModel) {
         }
 
         composable("login") {
+            // Show back button only when navigating from dashboard (backstack not empty)
+            val canGoBack = navController.previousBackStackEntry != null
             LoginScreen(
                 onLoginSuccess = { cookies ->
                     viewModel.onLoginSuccess(cookies)
                     navController.navigate("dashboard") {
-                        popUpTo("login") { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 },
-                onBack = { navController.popBackStack() }
+                onBack = if (canGoBack) {{ navController.popBackStack() }} else null
             )
         }
 
